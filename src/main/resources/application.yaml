@@ -1,0 +1,15 @@
+node:
+  environment: LIVE
+  port: 7075
+
+handshake:
+  expirationTimeInSeconds: 60
+
+peer:
+  expirationTimeInSeconds: 300
+  defaultNodes:
+    - peering.nano.org:7075
+
+logging:
+  level:
+    com.rotilho.jnano.node.network.MessageTranslator: DEBUG

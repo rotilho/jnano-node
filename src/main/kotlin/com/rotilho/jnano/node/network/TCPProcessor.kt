@@ -82,7 +82,8 @@ class TCPProcessor(val node: Node) {
             v?.dispose()
             connection.inbound()
                 .receive()
-                .map { InboundMessage(socketAddress, it.toByteArray()) }
+                .map { it.toByteArray() }
+                .map { InboundMessage(socketAddress, it) }
                 .doOnNext { logger.debug("Received from $socketAddress ${NanoHelper.toHex(it.content)}") }
                 .subscribe { MessageBus.publish(it) }
             connection

@@ -16,7 +16,8 @@ class VoteCodec: ByteArrayCodecSupport {
     }
 
     override fun decode(protocolVersion: Int, m: ByteArray): Vote? {
-        val voteType = fromShortBigEndian(m.copyOfRange(0, 2))
+        return null // doesn't work
+        val voteType = fromShortBigEndian(m.copyOfRange(0, 2)) // this wrong
         val representativePublicKey = m.copyOfRange(2, 34)
         val signature = m.copyOfRange(34, 98)
         val sequence = fromLongLittleEndian(m.copyOfRange(98, 106)) //TODO this is probably wrong but I couldn't figure out how to decode it yet

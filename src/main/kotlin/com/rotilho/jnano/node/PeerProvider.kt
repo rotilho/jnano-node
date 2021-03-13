@@ -4,7 +4,7 @@ import java.net.InetSocketAddress
 
 interface PeerProvider {
 
-    fun getPeers(): Set<Node>
+    fun getPeers(): List<Node>
 
     fun getVersion(socketAddress: InetSocketAddress): Int?
 

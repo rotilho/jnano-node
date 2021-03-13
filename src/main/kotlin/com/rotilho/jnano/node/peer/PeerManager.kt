@@ -57,7 +57,7 @@ class PeerManager(val currentNode: Node, val properties: PeerProperties, val cac
         return KeepAlive(currentNode, sample)
     }
 
-    override fun getPeers(): Set<Node> {
+    override fun getPeers(): List<Node> {
         return cache.getNodes()
     }
 

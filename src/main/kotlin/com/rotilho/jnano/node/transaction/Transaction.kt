@@ -1,55 +1,65 @@
 package com.rotilho.jnano.node.transaction
 
-import com.rotilho.jnano.commons.NanoHelper
-import com.rotilho.jnano.commons.NanoSignatures
-import com.rotilho.jnano.commons.NanoWorks
-import com.rotilho.jnano.node.block.Block
-import com.rotilho.jnano.node.block.BlockType
-import com.rotilho.jnano.node.block.VotedBlock
-import com.rotilho.jnano.node.utils.isEmpty
-import java.util.*
+import com.rotilho.jnano.commons.NanoAmount
+import com.rotilho.jnano.node.utils.toHex
+import java.math.BigInteger
 
+enum class TransactionStatus {
+    PENDING, CONFIRMED, CEMENTED
+}
 
-data class Transaction<out T : Block>(
-    val block: T,
+enum class BlockSubType {
+    OPEN, RECEIVE, SEND, CHANGE, EPOCH
+}
+
+enum class BlockType(val code: Short, val blockSize: Int) {
+    OPEN(4, 96),
+    CHANGE(5, 64),
+    RECEIVE(3, 64),
+    SEND(2, 80),
+    STATE(6, 144);
+
+    companion object {
+        private val CODE_MAP = values().associateBy(BlockType::code)
+        fun fromCode(code: Short): BlockType? {
+            return CODE_MAP[code]
+        }
+    }
+}
+
+open class Transaction(
+    val hash: ByteArray,
+    val blockType: BlockType,
+    val blockSubtype: BlockSubType?,
+    val accountVersion: BigInteger?,
+    val publicKey: ByteArray?,
+    val previous: ByteArray?,
+    val representative: ByteArray?,
+    val balance: NanoAmount?,
+    val link: ByteArray?,
+    val height: BigInteger?,
     val signature: ByteArray,
     val work: ByteArray
 ) {
-    fun isValid(): Boolean {
-        val hash = if (isEmpty(block.getPrevious())) block.getPublicKey()!! else block.getPrevious()
-        if (!NanoWorks.isValid(hash, if (block.getType() == BlockType.STATE) NanoHelper.reverse(work) else work)) {
-            return false;
-        } else if (block.getPublicKey() == null) {
-            return true;
-        }
-        return NanoSignatures.isValid(
-            block.getPublicKey()!!,
-            block.getHash(),
-            signature
-        ) && if (block is VotedBlock) block.isValid() else true
-    }
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as Transaction<Block>
-
-        if (block != other.block) return false
-        if (!Arrays.equals(signature, other.signature)) return false
-        if (!Arrays.equals(work, other.work)) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        var result = block.hashCode()
-        result = 31 * result + Arrays.hashCode(signature)
-        result = 31 * result + Arrays.hashCode(work)
-        return result
-    }
-
     override fun toString(): String {
-        return "Transaction(block=$block, signature=${NanoHelper.toHex(signature)}, work=${NanoHelper.toHex(work)})"
+        return "Transaction(hash=${hash.toHex()}, blockType=$blockType, blockSubtype=$blockSubtype, accountVersion=$accountVersion, publicKey=${publicKey?.toHex()}, previous=${previous?.toHex()}, representative=${representative?.toHex()}, balance=$balance, link=${link?.toHex()}, height=$height, signature=${signature.toHex()}, work=${work.toHex()})"
     }
 }
+
+open class VotedTransaction(
+    transaction: Transaction,
+    val vote: Vote
+) : Transaction(
+    transaction.hash,
+    transaction.blockType,
+    transaction.blockSubtype,
+    transaction.accountVersion,
+    transaction.publicKey,
+    transaction.previous,
+    transaction.representative,
+    transaction.balance,
+    transaction.link,
+    transaction.height,
+    transaction.signature,
+    transaction.work
+)

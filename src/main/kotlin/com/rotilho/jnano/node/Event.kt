@@ -8,9 +8,9 @@ open class Event<T>(val content: T) {
     }
 }
 
-class BroadcastEvent<T>(strategy : BroadcastStrategy, content: T) : Event<T>(content) {
+class BroadcastEvent<T>(val strategy : BroadcastStrategy, content: T) : Event<T>(content) {
     override fun toString(): String {
-        return "BroadcastEvent() ${super.toString()}"
+        return "BroadcastEvent(strategy=$strategy)"
     }
 }
 
@@ -27,6 +27,6 @@ class OutboundEvent<T>(val socketAddress: InetSocketAddress, content: T) : Event
 }
 
 
-enum class BroadcastStrategy(percentage : Int) {
+enum class BroadcastStrategy(val percentage : Int) {
     EVERYONE(100), MAJORITY(50), MINORITY(10)
 }

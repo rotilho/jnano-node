@@ -15,7 +15,7 @@ class TCPByteArrayCodecs(private val codecs: List<TCPCodec<*>>) : ByteArrayCodec
             .filter { it != null }
             .firstOrNull()
         if (encoded == null) {
-            logger.error { "Can't encode $o" }
+            logger.error { "Can't encode ${o.javaClass.simpleName} $o" }
             return null
         }
         return encoded

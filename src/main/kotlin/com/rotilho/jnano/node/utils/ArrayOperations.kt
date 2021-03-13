@@ -1,11 +1,12 @@
 package com.rotilho.jnano.node.utils
 
+import com.rotilho.jnano.commons.NanoHelper
 import io.netty.buffer.ByteBuf
 
 fun flatMap(vararg byteArrays: ByteArray): ByteArray {
     val size = byteArrays.asSequence()
-            .map { it.size }
-            .reduce { a, b -> a + b }
+        .map { it.size }
+        .reduce { a, b -> a + b }
 
     val finalByteArray = ByteArray(size)
 
@@ -26,4 +27,8 @@ fun ByteBuf.toByteArray(): ByteArray {
     this.getBytes(this.readerIndex(), bytes)
 
     return bytes
+}
+
+fun ByteArray.toHex(): String {
+    return NanoHelper.toHex(this)
 }

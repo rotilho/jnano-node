@@ -1,5 +1,8 @@
 package com.rotilho.jnano.node.network
 
+import com.google.common.cache.CacheBuilder
+import com.google.common.cache.CacheLoader
+import com.google.common.cache.LoadingCache
 import com.rotilho.jnano.commons.NanoHelper.toHex
 import com.rotilho.jnano.node.*
 import com.rotilho.jnano.node.codec.TCPByteArrayCodecs
@@ -10,7 +13,9 @@ import kotlinx.coroutines.launch
 import mu.KotlinLogging
 import org.springframework.stereotype.Service
 import java.net.InetSocketAddress
+import java.time.Duration
 import javax.annotation.PostConstruct
+import kotlin.random.Random
 
 @Service
 class MessageTranslator(
@@ -19,6 +24,22 @@ class MessageTranslator(
     val codecs: TCPByteArrayCodecs
 ) {
     private val logger = KotlinLogging.logger {}
+
+    private val minimalPeerCount = 100
+    private val cache: LoadingCache<BroadcastStrategy, List<Node>> = CacheBuilder.newBuilder()
+        .expireAfterWrite(Duration.ofMinutes(1))
+        .build(CacheLoader.from { key ->
+            val peers = peerProvider.getPeers()
+            if (key!! == BroadcastStrategy.EVERYONE || peers.size < minimalPeerCount) {
+                peers
+            } else {
+                val take = peers.size * key.percentage / 100
+                peers.asSequence()
+                    .filter { Random.nextInt(0, 100) <= key.percentage }
+                    .take(take)
+                    .toList()
+            }
+        })
 
     @PostConstruct
     fun initialize() {
@@ -35,8 +56,7 @@ class MessageTranslator(
                 .collect { event ->
                     val encoded = encode(event as Event<Any>)
                     if (encoded != null) {
-                        peerProvider.getPeers()
-                            .asSequence()
+                        cache[event.strategy]
                             .map { node -> OutboundMessage(node.socketAddress, encoded, event) }
                             .forEach { publish(it) }
                     }
@@ -70,7 +90,7 @@ class MessageTranslator(
         }
     }
 
-    private fun publish(message : OutboundMessage) {
+    private fun publish(message: OutboundMessage) {
         logger.debug { "Sending ${message.source}" }
         MessageBus.publish(message)
     }
@@ -89,7 +109,7 @@ class MessageTranslator(
 
         ContextHolder.put("socketAddress", socketAddress)
 
-        val decoded = codecs.decode(protocolVersion ?: extractVersion(encoded), encoded)?: return null
+        val decoded = codecs.decode(protocolVersion ?: extractVersion(encoded), encoded) ?: return null
 
         logger.debug { "Decoded message from $socketAddress $decoded ${toHex(encoded)}" }
 

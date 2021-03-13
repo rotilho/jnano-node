@@ -3,6 +3,7 @@ package com.rotilho.jnano.node.network
 import com.rotilho.jnano.commons.NanoHelper
 import com.rotilho.jnano.node.Node
 import com.rotilho.jnano.node.utils.toByteArray
+import com.rotilho.jnano.node.utils.toHex
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
@@ -22,6 +23,7 @@ import javax.annotation.PreDestroy
 @Service
 class TCPProcessor(val node: Node) {
     private val logger = KotlinLogging.logger {}
+    private val networkCode = node.environment.code.encodeToByteArray()
 
     private val connections = ConcurrentHashMap<InetSocketAddress, Connection>()
 
@@ -83,6 +85,7 @@ class TCPProcessor(val node: Node) {
             connection.inbound()
                 .receive()
                 .map { it.toByteArray() }
+                .filter { isSameNetwork(socketAddress, connection, it) }
                 .map { InboundMessage(socketAddress, it) }
                 .doOnNext { logger.debug("Received from $socketAddress ${NanoHelper.toHex(it.content)}") }
                 .subscribe { MessageBus.publish(it) }
@@ -97,11 +100,20 @@ class TCPProcessor(val node: Node) {
             .sendByteArray(Mono.just(message.content))
             .then()
             .onErrorResume { t ->
-                logger.warn("Failed to send $message", t)
+                logger.info(t) { "Failed to send $message" }
                 connections.remove(socketAddress)
                 Mono.empty()
             }
             .block()
+    }
+
+    private fun isSameNetwork(socketAddress: InetSocketAddress, connection: Connection, byteArray: ByteArray): Boolean {
+        if (byteArray.size >= 2 && networkCode[0] == byteArray[0] && networkCode[1] == byteArray[1]) {
+            return true
+        }
+        logger.trace { "Received invalid message from $socketAddress ${byteArray.toHex()}" }
+        connection.dispose()
+        return false
     }
 
 

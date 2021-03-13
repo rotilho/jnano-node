@@ -9,7 +9,7 @@ import java.util.concurrent.TimeUnit
 
 @Component
 class PeerCache(properties: PeerProperties) {
-    var cache: Cache<InetSocketAddress, Peer> = CacheBuilder.newBuilder()
+    private val cache: Cache<InetSocketAddress, Peer> = CacheBuilder.newBuilder()
         .expireAfterWrite(properties.expirationTimeInSeconds!!, TimeUnit.SECONDS)
         .build()
 
@@ -39,10 +39,10 @@ class PeerCache(properties: PeerProperties) {
         return true
     }
 
-    fun getNodes(): Set<Node> {
+    fun getNodes(): List<Node> {
         return cache.asMap().values.asSequence()
             .map { it.node }
-            .toSet()
+            .toList()
     }
 
 }

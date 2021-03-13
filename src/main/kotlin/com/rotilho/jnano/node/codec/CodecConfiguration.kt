@@ -1,14 +1,13 @@
 package com.rotilho.jnano.node.codec
 
 import com.rotilho.jnano.node.Node
-import com.rotilho.jnano.node.codec.block.*
+import com.rotilho.jnano.node.codec.network.PacketType
+import com.rotilho.jnano.node.codec.network.TCPCodec
 import com.rotilho.jnano.node.codec.peer.HandshakeAnswerCodec
 import com.rotilho.jnano.node.codec.peer.HandshakeChallengeCodec
 import com.rotilho.jnano.node.codec.peer.KeepAliveCodec
 import com.rotilho.jnano.node.codec.peer.NodeCodec
-import com.rotilho.jnano.node.codec.transaction.TransactionCodec
-import com.rotilho.jnano.node.codec.network.PacketType
-import com.rotilho.jnano.node.codec.network.TCPCodec
+import com.rotilho.jnano.node.codec.transaction.*
 import com.rotilho.jnano.node.codec.vote.VoteCodec
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -32,79 +31,78 @@ class CodecConfiguration {
     }
 
     @Bean
-    fun tcpPublishStateTransactionCodec(node: Node, codec: StateBlockCodec): TCPCodec<*> {
-        return TCPCodec(PacketType.PUBLISH, node, TransactionCodec(codec))
+    fun tcpPublishStateTransactionCodec(node: Node): TCPCodec<*> {
+        return TCPCodec(PacketType.PUBLISH, node, TransactionStateBlockCodec())
     }
 
     @Bean
-    fun tcpPublishOpenTransactionCodec(node: Node, codec: OpenBlockCodec): TCPCodec<*> {
-        return TCPCodec(PacketType.PUBLISH, node, TransactionCodec(codec))
+    fun tcpPublishOpenTransactionCodec(node: Node): TCPCodec<*> {
+        return TCPCodec(PacketType.PUBLISH, node, TransactionOpenBlockCodec())
     }
 
     @Bean
-    fun tcpPublishReceiveTransactionCodec(node: Node, codec: ReceiveBlockCodec): TCPCodec<*> {
-        return TCPCodec(PacketType.PUBLISH, node, TransactionCodec(codec))
-    }
-
-
-    @Bean
-    fun tcpPublishSendTransactionCodec(node: Node, codec: SendBlockCodec): TCPCodec<*> {
-        return TCPCodec(PacketType.PUBLISH, node, TransactionCodec(codec))
+    fun tcpPublishReceiveTransactionCodec(node: Node): TCPCodec<*> {
+        return TCPCodec(PacketType.PUBLISH, node, TransactionReceiveBlockCodec())
     }
 
     @Bean
-    fun tcpPublishChangeTransactionCodec(node: Node, codec: ChangeBlockCodec): TCPCodec<*> {
-        return TCPCodec(PacketType.PUBLISH, node, TransactionCodec(codec))
+    fun tcpPublishSendTransactionCodec(node: Node): TCPCodec<*> {
+        return TCPCodec(PacketType.PUBLISH, node, TransactionSendBlockCodec())
     }
 
     @Bean
-    fun tcpRequestConfirmStateTransactionCodec(node: Node, codec: StateBlockCodec): TCPCodec<*> {
-        return TCPCodec(PacketType.CONFIRM_REQUEST, node, TransactionCodec(codec))
+    fun tcpPublishChangeTransactionCodec(node: Node): TCPCodec<*> {
+        return TCPCodec(PacketType.PUBLISH, node, TransactionChangeBlockCodec())
     }
 
     @Bean
-    fun tcpRequestConfirmOpenTransactionCodec(node: Node, codec: OpenBlockCodec): TCPCodec<*> {
-        return TCPCodec(PacketType.CONFIRM_REQUEST, node, TransactionCodec(codec))
+    fun tcpRequestConfirmStateTransactionCodec(node: Node): TCPCodec<*> {
+        return TCPCodec(PacketType.CONFIRM_REQUEST, node, TransactionStateBlockCodec())
     }
 
     @Bean
-    fun tcpRequestConfirmReceiveTransactionCodec(node: Node, codec: ReceiveBlockCodec): TCPCodec<*> {
-        return TCPCodec(PacketType.CONFIRM_REQUEST, node, TransactionCodec(codec))
+    fun tcpRequestConfirmOpenTransactionCodec(node: Node): TCPCodec<*> {
+        return TCPCodec(PacketType.CONFIRM_REQUEST, node, TransactionOpenBlockCodec())
     }
 
     @Bean
-    fun tcpRequestConfirmSendTransactionCodec(node: Node, codec: SendBlockCodec): TCPCodec<*> {
-        return TCPCodec(PacketType.CONFIRM_REQUEST, node, TransactionCodec(codec))
+    fun tcpRequestConfirmReceiveTransactionCodec(node: Node): TCPCodec<*> {
+        return TCPCodec(PacketType.CONFIRM_REQUEST, node, TransactionReceiveBlockCodec())
     }
 
     @Bean
-    fun tcpRequestConfirmChangeTransactionCodec(node: Node, codec: ChangeBlockCodec): TCPCodec<*> {
-        return TCPCodec(PacketType.CONFIRM_REQUEST, node, TransactionCodec(codec))
+    fun tcpRequestConfirmSendTransactionCodec(node: Node): TCPCodec<*> {
+        return TCPCodec(PacketType.CONFIRM_REQUEST, node, TransactionSendBlockCodec())
     }
 
     @Bean
-    fun tcpRequestAckStateTransactionCodec(node: Node, codec: StateBlockCodec): TCPCodec<*> {
-        return TCPCodec(PacketType.CONFIRM_ACKNOWLEDGE, node, TransactionCodec(VotedBlockCodec(codec)))
+    fun tcpRequestConfirmChangeTransactionCodec(node: Node): TCPCodec<*> {
+        return TCPCodec(PacketType.CONFIRM_REQUEST, node, TransactionChangeBlockCodec())
     }
 
     @Bean
-    fun tcpRequestAckOpenTransactionCodec(node: Node, codec: OpenBlockCodec): TCPCodec<*> {
-        return TCPCodec(PacketType.CONFIRM_ACKNOWLEDGE, node, TransactionCodec(VotedBlockCodec(codec)))
+    fun tcpRequestAckStateTransactionCodec(node: Node): TCPCodec<*> {
+        return TCPCodec(PacketType.CONFIRM_ACKNOWLEDGE, node, VotedTransactionCodec(TransactionStateBlockCodec()))
     }
 
     @Bean
-    fun tcpRequestAckReceiveTransactionCodec(node: Node, codec: ReceiveBlockCodec): TCPCodec<*> {
-        return TCPCodec(PacketType.CONFIRM_ACKNOWLEDGE, node, TransactionCodec(VotedBlockCodec(codec)))
+    fun tcpRequestAckOpenTransactionCodec(node: Node): TCPCodec<*> {
+        return TCPCodec(PacketType.CONFIRM_ACKNOWLEDGE, node, VotedTransactionCodec(TransactionOpenBlockCodec()))
     }
 
     @Bean
-    fun tcpRequestAckSendTransactionCodec(node: Node, codec: SendBlockCodec): TCPCodec<*> {
-        return TCPCodec(PacketType.CONFIRM_ACKNOWLEDGE, node, TransactionCodec(VotedBlockCodec(codec)))
+    fun tcpRequestAckReceiveTransactionCodec(node: Node): TCPCodec<*> {
+        return TCPCodec(PacketType.CONFIRM_ACKNOWLEDGE, node, VotedTransactionCodec(TransactionReceiveBlockCodec()))
     }
 
     @Bean
-    fun tcpRequestAckChangeTransactionCodec(node: Node, codec: ChangeBlockCodec): TCPCodec<*> {
-        return TCPCodec(PacketType.CONFIRM_ACKNOWLEDGE, node, TransactionCodec(VotedBlockCodec(codec)))
+    fun tcpRequestAckSendTransactionCodec(node: Node): TCPCodec<*> {
+        return TCPCodec(PacketType.CONFIRM_ACKNOWLEDGE, node, VotedTransactionCodec(TransactionSendBlockCodec()))
+    }
+
+    @Bean
+    fun tcpRequestAckChangeTransactionCodec(node: Node): TCPCodec<*> {
+        return TCPCodec(PacketType.CONFIRM_ACKNOWLEDGE, node, VotedTransactionCodec(TransactionChangeBlockCodec()))
     }
 
     @Bean

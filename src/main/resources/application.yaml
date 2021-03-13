@@ -1,3 +1,17 @@
+spring:
+  flyway:
+    url: jdbc:mysql://localhost:3306/nano
+    user: root
+    password: nano-password
+  r2dbc:
+    url: r2dbcs:mysql://localhost:3306/nano
+    username: root
+    password: nano-password
+    pool:
+      initial-size: 10
+      max-size: 10
+      max-life-time: 8h
+
 node:
   environment: LIVE
   port: 7075
@@ -10,6 +24,14 @@ peer:
   defaultNodes:
     - peering.nano.org:7075
 
+transaction:
+  cacheExpirationTimeInSeconds: 60
+  hashCacheExpirationTimeInSeconds: 3600
+
 logging:
   level:
-    com.rotilho.jnano.node.network.MessageTranslator: DEBUG
+    root: INFO
+    com.rotilho.jnano.node.codec.TCPByteArrayCodecs: WARN
+    com.rotilho.jnano.node.network.MessageTranslator: INFO
+    com.rotilho.jnano.node.network.TCPProcessor: INFO
+    com.rotilho.jnano.node.transaction.TransactionService: INFO

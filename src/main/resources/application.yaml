@@ -25,7 +25,8 @@ peer:
     - peering.nano.org:7075
 
 transaction:
-  cacheExpirationTimeInSeconds: 60
+  entityCacheMaxSize: 10_000
+  entityCacheExpirationTimeInSeconds: 60
   hashCacheExpirationTimeInSeconds: 3600
 
 logging:

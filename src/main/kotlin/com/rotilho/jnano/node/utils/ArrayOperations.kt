@@ -1,5 +1,6 @@
 package com.rotilho.jnano.node.utils
 
+import com.rotilho.jnano.commons.NanoAccounts
 import com.rotilho.jnano.commons.NanoHelper
 import io.netty.buffer.ByteBuf
 
@@ -31,4 +32,15 @@ fun ByteBuf.toByteArray(): ByteArray {
 
 fun ByteArray.toHex(): String {
     return NanoHelper.toHex(this)
+}
+
+fun ByteArray.toNullWhenEmpty(): ByteArray? {
+    if (this.all { it == 0.toByte() }) {
+        return null
+    }
+    return this
+}
+
+fun ByteArray.toAccount(): String {
+    return NanoAccounts.createAccount(this)
 }

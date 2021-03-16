@@ -6,11 +6,11 @@ import com.rotilho.jnano.node.codec.ByteArrayCodecSupport
 import com.rotilho.jnano.node.utils.flatMap
 import java.lang.Math.min
 
-class TCPCodec<T : ByteArrayCodecSupport>(
+class TCPCodec<T : ByteArrayCodecSupport<*>>(
     private val type: PacketType,
     private val node: Node,
     private val codec: T
-) : ByteArrayCodecSupport {
+) : ByteArrayCodecSupport<Any> {
     override fun encode(protocolVersion: Int, o: Any): ByteArray? {
         val body = codec.encode(protocolVersion, o) ?: return null;
 
@@ -38,7 +38,7 @@ class TCPCodec<T : ByteArrayCodecSupport>(
         if (PacketType.fromCode(m[5].toInt()) != type) {
             return null
         }
-        if (codec is TCPCodecSupport) {
+        if (codec is TCPCodecSupport<*>) {
             return codec.decode(protocolVersion, m);
         }
         return codec.decode(protocolVersion, m.copyOfRange(6, m.size));

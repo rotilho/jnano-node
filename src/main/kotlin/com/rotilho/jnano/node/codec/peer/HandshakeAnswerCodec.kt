@@ -6,7 +6,7 @@ import com.rotilho.jnano.node.peer.handshake.HandshakeChallenge
 import com.rotilho.jnano.node.utils.fromLittleEndian
 import com.rotilho.jnano.node.utils.toLittleEndian
 
-class HandshakeAnswerCodec(private val nodeCodec: NodeCodec) : TCPCodecSupport {
+class HandshakeAnswerCodec(private val nodeCodec: NodeCodec) : TCPCodecSupport<HandshakeAnswer> {
     override fun encode(protocolVersion: Int, o: Any): ByteArray? {
         if (o !is HandshakeAnswer) {
             return null
@@ -26,7 +26,7 @@ class HandshakeAnswerCodec(private val nodeCodec: NodeCodec) : TCPCodecSupport {
         return message;
     }
 
-    override fun decode(protocolVersion: Int, m: ByteArray): Any? {
+    override fun decode(protocolVersion: Int, m: ByteArray): HandshakeAnswer? {
         val extensions = fromLittleEndian(m.copyOfRange(6, 8))
         return when (extensions) {
             2 -> {

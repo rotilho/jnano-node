@@ -1,67 +1,56 @@
 package com.rotilho.jnano.node.codec.transaction
 
-import com.rotilho.jnano.commons.NanoAmount
 import com.rotilho.jnano.commons.NanoHashes
 import com.rotilho.jnano.node.transaction.BlockType
-import com.rotilho.jnano.node.transaction.Transaction
-import com.rotilho.jnano.node.transaction.BlockSubType
+import com.rotilho.jnano.node.transaction.TransactionOpenBlock
 import com.rotilho.jnano.node.utils.flatMap
 import com.rotilho.jnano.node.utils.toShortBigEndian
-import java.math.BigInteger
+import kotlin.reflect.KClass
 
-class TransactionOpenBlockCodec : TransactionCodec() {
+class TransactionOpenBlockCodec : TransactionCodec<TransactionOpenBlock> {
 
-    override fun hash(m: ByteArray): ByteArray {
-        return NanoHashes.digest256(m.copyOfRange(0, BlockType.OPEN.blockSize))
-    }
-
-    override fun blockType(): BlockType {
+    override fun getBlockType(): BlockType {
         return BlockType.OPEN
     }
 
-    override fun blockSubType(m: ByteArray): BlockSubType {
-        return BlockSubType.OPEN
+    override fun getTransactionClass(): KClass<TransactionOpenBlock> {
+        return TransactionOpenBlock::class
     }
 
-    override fun accountVersion(m: ByteArray): BigInteger? {
+    override fun encodeTransaction(protocolVersion: Int, transaction: TransactionOpenBlock): ByteArray {
+        return flatMap(
+            toShortBigEndian(transaction.getBlockType().code),
+            transaction.getLink(),
+            transaction.getRepresentative(),
+            transaction.getPublicKey(),
+            transaction.getSignature(),
+            transaction.getWork()
+        )
+    }
+
+
+    override fun decodeTransaction(protocolVersion: Int, b: ByteArray): TransactionOpenBlock? {
+        val hash = NanoHashes.digest256(b.copyOfRange(0, BlockType.OPEN.blockSize))
+        val link = b.copyOfRange(0, 32)
+        val representative = b.copyOfRange(32, 64)
+        val publicKey = b.copyOfRange(64, 96)
+        val signature = b.copyOfRange(96, 160)
+        val work = b.copyOfRange(160, 168)
+
+
+        val transaction = TransactionOpenBlock(
+            hash = hash,
+            publicKey = publicKey,
+            representative = representative,
+            link = link,
+            signature = signature,
+            work = work
+        )
+
+        if (transaction.isValid()) {
+            return transaction
+        }
+
         return null
-    }
-
-    override fun publicKey(m: ByteArray): ByteArray {
-        return m.copyOfRange(64, 96);
-    }
-
-    override fun previous(m: ByteArray): ByteArray? {
-        return null
-    }
-
-    override fun representative(m: ByteArray): ByteArray? {
-        return m.copyOfRange(32, 64)
-    }
-
-    override fun balance(m: ByteArray): NanoAmount? {
-        return null
-    }
-
-    override fun link(m: ByteArray): ByteArray? {
-        return m.copyOfRange(0, 32)
-    }
-
-    override fun height(m: ByteArray): BigInteger? {
-        return null
-    }
-
-    override fun signature(m: ByteArray): ByteArray {
-        return m.copyOfRange(96, 160)
-    }
-
-    override fun work(m: ByteArray): ByteArray {
-        return m.copyOfRange(160, 168)
-    }
-
-    override fun encode(protocolVersion: Int, o: Any): ByteArray? {
-        if (o !is Transaction || o.blockType != BlockType.OPEN) return null
-
-        return flatMap(toShortBigEndian(o.blockType.code), o.link!!, o.representative!!, o.publicKey!!, o.signature, o.work)
     }
 }

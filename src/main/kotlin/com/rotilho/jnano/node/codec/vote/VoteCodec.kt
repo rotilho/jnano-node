@@ -6,13 +6,19 @@ import com.rotilho.jnano.node.vote.Vote
 import java.util.stream.IntStream
 import kotlin.streams.toList
 
-class VoteCodec: ByteArrayCodecSupport {
+class VoteCodec : ByteArrayCodecSupport<Vote> {
 
     override fun encode(protocolVersion: Int, o: Any): ByteArray? {
         if (o !is Vote) {
             return null
         }
-        return flatMap(toShortBigEndian(o.voteType), o.representativePublicKey, o.signature, toLongLittleEndian(o.sequence), *o.hashes.toTypedArray())
+        return flatMap(
+            toShortBigEndian(o.voteType),
+            o.representativePublicKey,
+            o.signature,
+            toLongLittleEndian(o.sequence),
+            *o.hashes.toTypedArray()
+        )
     }
 
     override fun decode(protocolVersion: Int, m: ByteArray): Vote? {

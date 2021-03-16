@@ -3,72 +3,54 @@ package com.rotilho.jnano.node.codec.transaction
 import com.rotilho.jnano.commons.NanoAmount
 import com.rotilho.jnano.commons.NanoHashes
 import com.rotilho.jnano.node.transaction.BlockType
-import com.rotilho.jnano.node.transaction.BlockSubType
-import com.rotilho.jnano.node.transaction.Transaction
+import com.rotilho.jnano.node.transaction.TransactionSendBlock
 import com.rotilho.jnano.node.utils.flatMap
 import com.rotilho.jnano.node.utils.toShortBigEndian
-import java.math.BigInteger
+import kotlin.reflect.KClass
 
-class TransactionSendBlockCodec : TransactionCodec() {
+class TransactionSendBlockCodec : TransactionCodec<TransactionSendBlock> {
 
-    override fun hash(m: ByteArray): ByteArray {
-        return NanoHashes.digest256(m.copyOfRange(0, BlockType.SEND.blockSize))
-    }
-
-    override fun blockType(): BlockType {
+    override fun getBlockType(): BlockType {
         return BlockType.SEND
     }
 
-    override fun blockSubType(m: ByteArray): BlockSubType {
-        return BlockSubType.SEND
+    override fun getTransactionClass(): KClass<TransactionSendBlock> {
+        return TransactionSendBlock::class
     }
 
-    override fun accountVersion(m: ByteArray): BigInteger? {
-        return null
-    }
-
-    override fun publicKey(m: ByteArray): ByteArray? {
-        return null
-    }
-
-    override fun previous(m: ByteArray): ByteArray {
-        return m.copyOfRange(0, 32)
-    }
-
-    override fun representative(m: ByteArray): ByteArray? {
-        return null
-    }
-
-    override fun balance(m: ByteArray): NanoAmount {
-        return NanoAmount.ofByteArray(m.copyOfRange(64, 80))
-    }
-
-    override fun link(m: ByteArray): ByteArray {
-        return m.copyOfRange(32, 64)
-    }
-
-    override fun height(m: ByteArray): BigInteger? {
-        return null
-    }
-
-    override fun signature(m: ByteArray): ByteArray {
-        return m.copyOfRange(80, 144)
-    }
-
-    override fun work(m: ByteArray): ByteArray {
-        return m.copyOfRange(144, 152)
-    }
-
-    override fun encode(protocolVersion: Int, o: Any): ByteArray? {
-        if (o !is Transaction || o.blockType != BlockType.SEND) return null
-
+    override fun encodeTransaction(protocolVersion: Int, transaction: TransactionSendBlock): ByteArray {
         return flatMap(
-            toShortBigEndian(o.blockType.code),
-            o.previous!!,
-            o.link!!,
-            o.balance!!.toByteArray(),
-            o.signature,
-            o.work
+            toShortBigEndian(transaction.getBlockType().code),
+            transaction.getPrevious(),
+            transaction.getLink(),
+            transaction.getBalance().toByteArray(),
+            transaction.getSignature(),
+            transaction.getWork()
         )
+    }
+
+
+    override fun decodeTransaction(protocolVersion: Int, b: ByteArray): TransactionSendBlock? {
+        val hash = NanoHashes.digest256(b.copyOfRange(0, BlockType.SEND.blockSize))
+        val previous = b.copyOfRange(0, 32)
+        val link = b.copyOfRange(32, 64)
+        val balance = NanoAmount.ofByteArray(b.copyOfRange(64, 80))
+        val signature = b.copyOfRange(80, 144)
+        val work = b.copyOfRange(144, 152)
+
+        val transaction = TransactionSendBlock(
+            hash = hash,
+            previous = previous,
+            balance = balance,
+            link = link,
+            signature = signature,
+            work = work
+        )
+
+        if (transaction.isValid()) {
+            return transaction
+        }
+
+        return null
     }
 }

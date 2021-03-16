@@ -1,6 +1,8 @@
 CREATE TABLE transactions
 (
     hash           VARBINARY(32) PRIMARY KEY,
+    status         VARCHAR(9)    NOT NULl,
+    version        INT UNSIGNED  NOT NULl,
     blockType      VARCHAR(7)    NOT NULL,
     blockSubType   VARCHAR(7),
     accountVersion INT UNSIGNED,
@@ -13,12 +15,6 @@ CREATE TABLE transactions
     signature      VARBINARY(64) NOT NULL,
     work           VARBINARY(8)  NOT NULL,
     createdAt      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE transaction_statuses
-(
-    hash   VARBINARY(32) PRIMARY KEY,
-    status VARCHAR(9) NOT NULl
 );
 
 CREATE TABLE pending_credit

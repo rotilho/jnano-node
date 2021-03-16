@@ -13,7 +13,7 @@ import java.util.stream.IntStream
 import java.util.stream.Stream
 import kotlin.streams.toList
 
-class KeepAliveCodec(private val nodeCodec: NodeCodec) : TCPCodecSupport {
+class KeepAliveCodec(private val nodeCodec: NodeCodec) : TCPCodecSupport<KeepAlive> {
     override fun encode(protocolVersion: Int, o: Any): ByteArray? {
         if (o !is KeepAlive) {
             return null
@@ -24,7 +24,7 @@ class KeepAliveCodec(private val nodeCodec: NodeCodec) : TCPCodecSupport {
         return message
     }
 
-    override fun decode(protocolVersion: Int, m: ByteArray): Any? {
+    override fun decode(protocolVersion: Int, m: ByteArray): KeepAlive? {
         val node = nodeCodec.decode(protocolVersion, m) ?: return null
         val messageBody = m.copyOfRange(6, m.size)
         val peers = Stream.iterate(0) { i -> i + 18 }

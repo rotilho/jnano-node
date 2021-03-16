@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component
 import java.net.InetSocketAddress
 
 @Component
-class NodeCodec : TCPCodecSupport {
+class NodeCodec : TCPCodecSupport<Node> {
     override fun encode(protocolVersion: Int, o: Any): ByteArray? {
         throw UnsupportedOperationException("Node shouldn't be encoded")
     }

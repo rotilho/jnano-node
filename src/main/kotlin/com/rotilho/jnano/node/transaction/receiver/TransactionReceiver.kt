@@ -1,11 +1,13 @@
-package com.rotilho.jnano.node.transaction
+package com.rotilho.jnano.node.transaction.receiver
 
 import com.google.common.cache.Cache
 import com.google.common.cache.CacheBuilder
-import com.rotilho.jnano.node.BroadcastEvent
-import com.rotilho.jnano.node.BroadcastStrategy
 import com.rotilho.jnano.node.EventBus
 import com.rotilho.jnano.node.InboundEvent
+import com.rotilho.jnano.node.transaction.NewTransactionReceived
+import com.rotilho.jnano.node.transaction.Transaction
+import com.rotilho.jnano.node.transaction.TransactionProperties
+import com.rotilho.jnano.node.transaction.TransactionRepository
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.async
@@ -17,7 +19,7 @@ import java.util.concurrent.TimeUnit
 import javax.annotation.PostConstruct
 
 @Service
-class TransactionService(properties: TransactionProperties, val repository: TransactionRepository) {
+class TransactionReceiver(properties: TransactionProperties, val repository: TransactionRepository) {
     private val logger = KotlinLogging.logger {}
 
     private val cache: Cache<ByteArray, Deferred<ByteArray>> = CacheBuilder.newBuilder()
@@ -34,26 +36,28 @@ class TransactionService(properties: TransactionProperties, val repository: Tran
     private fun initializeTransactionListener() {
         GlobalScope.launch {
             EventBus.listen(InboundEvent::class.java, Transaction::class.java)
-                .collect { process(BroadcastStrategy.MINORITY, it) }
+                .collect { receive(it) }
         }
     }
 
-    private suspend fun process(broadcastStrategy: BroadcastStrategy, transaction: Transaction) {
-        val saved = cache.get(transaction.hash) {
+    private suspend fun receive(transaction: Transaction) {
+        val saved = cache.get(transaction.getHash()) {
             GlobalScope.async {
-                repository.save(transaction).hash
+
+                if (repository.insert(transaction)) {
+                    logger.debug { "Saved $transaction" }
+                    EventBus.publish(NewTransactionReceived(transaction))
+                }
+
+                transaction.getHash()
             }
         }
 
         try {
             saved.await()
-
-            EventBus.publish(BroadcastEvent(broadcastStrategy, transaction))
-
-            logger.debug { "Saved $transaction" }
         } catch (e: Exception) {
             logger.error(e) { "Failed to save $transaction" }
-            cache.invalidate(transaction.hash)
+            cache.invalidate(transaction.getHash())
         }
     }
 }

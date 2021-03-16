@@ -6,6 +6,7 @@ import com.rotilho.jnano.node.Node
 import com.rotilho.jnano.node.codec.network.PacketType
 import com.rotilho.jnano.node.codec.network.TCPCodec
 import com.rotilho.jnano.node.transaction.Transaction
+import com.rotilho.jnano.node.utils.toHex
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
@@ -19,12 +20,12 @@ internal class TransactionOpenBlockCodecTest {
 
     @ParameterizedTest
     @MethodSource("providers")
-    fun `Should decode and encode`(type: PacketType, transactionCodec: TransactionCodec, encoded: String) {
+    fun `Should decode and encode`(type: PacketType, transactionCodec: TransactionCodec<*>, encoded: String) {
         val codec = TCPCodec(type, node, transactionCodec)
 
         val decoded = codec.decode(node.protocolVersion, NanoHelper.toByteArray(encoded))!! as Transaction
 
-        assertEquals(encoded, NanoHelper.toHex(codec.encode(node.protocolVersion, decoded)!!))
+        assertEquals(encoded, codec.encode(node.protocolVersion, decoded)!!.toHex())
     }
 
     companion object {

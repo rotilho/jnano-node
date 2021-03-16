@@ -27,17 +27,18 @@ class TransactionRepository(
     val operator: TransactionalOperator
 ) {
     private val cache: Cache<ByteArray, Deferred<Transaction>> = CacheBuilder.newBuilder()
-        .expireAfterWrite(properties.cacheExpirationTimeInSeconds!!, TimeUnit.SECONDS)
+        .maximumSize(properties.entityCacheMaxSize!!)
+        .expireAfterWrite(properties.entityCacheExpirationTimeInSeconds!!, TimeUnit.SECONDS)
         .build()
 
     val insertOrUpdateStatement = """
-            INSERT INTO transactions
+            INSERT IGNORE INTO transactions
                         (
                                     hash,
                                     blockType,
                                     blockSubType,
                                     accountVersion,
-                                    publickey,
+                                    publicKey,
                                     previous,
                                     representative,
                                     balance,
@@ -61,20 +62,22 @@ class TransactionRepository(
                                     :signature,
                                     :work
                         )
-            ON DUPLICATE KEY UPDATE 
-                   blockSubType = :blockSubType,
-                   accountVersion = :accountVersion,
-                   publicKey = :publicKey,
-                   previous = :previous,
-                   representative = :representative,
-                   balance = :balance,
-                   link = :link,
-                   height = :height
     """.trimIndent()
 
+    //    ON DUPLICATE KEY UPDATE
+//    blockSubType = :blockSubType,
+//    accountVersion = :accountVersion,
+//    publicKey = :publicKey,
+//    previous = :previous, // probably immutable
+//    representative = :representative,
+//    balance = :balance,
+//    link = :link, // probably immutable
+//    height = :height
     val mapping: BiFunction<Row, RowMetadata, Transaction> =
         BiFunction<Row, RowMetadata, Transaction> { row, rowMetaData ->
             val hash = row.get("hash", ByteArray::class.java)!!
+            val status = row.get("hash", TransactionStatus::class.java)!!
+            val version = row.get("version", Int::class.java)!!
             val blockType = row.get("blockType", BlockType::class.java)!!
             val blockSubType = row.get("blockSubType", BlockSubType::class.java)!!
             val accountVersion = row.get("accountVersion", BigInteger::class.java)!!
@@ -87,20 +90,77 @@ class TransactionRepository(
             val signature = row.get("signature", ByteArray::class.java)!!
             val work = row.get("work", ByteArray::class.java)!!
 
-            Transaction(
-                hash,
-                blockType,
-                blockSubType,
-                accountVersion,
-                publicKey,
-                previous,
-                representative,
-                NanoAmount.ofRaw(balance),
-                link,
-                height,
-                signature,
-                work
-            )
+            when (blockType) {
+                BlockType.OPEN -> TransactionOpenBlock(
+                    hash,
+                    status,
+                    version,
+                    accountVersion,
+                    publicKey,
+                    representative,
+                    NanoAmount.ofRaw(balance),
+                    link,
+                    signature,
+                    work
+                )
+                BlockType.SEND -> TransactionSendBlock(
+                    hash,
+                    status,
+                    version,
+                    accountVersion,
+                    publicKey,
+                    previous,
+                    representative,
+                    NanoAmount.ofRaw(balance),
+                    link,
+                    height,
+                    signature,
+                    work
+                )
+                BlockType.RECEIVE -> TransactionReceiveBlock(
+                    hash,
+                    status,
+                    version,
+                    accountVersion,
+                    publicKey,
+                    previous,
+                    representative,
+                    NanoAmount.ofRaw(balance),
+                    link,
+                    height,
+                    signature,
+                    work
+                )
+                BlockType.CHANGE -> TransactionChangeBlock(
+                    hash,
+                    status,
+                    version,
+                    accountVersion,
+                    publicKey,
+                    previous,
+                    representative,
+                    NanoAmount.ofRaw(balance),
+                    link,
+                    height,
+                    signature,
+                    work
+                )
+                BlockType.STATE -> TransactionStateBlock(
+                    hash,
+                    status,
+                    version,
+                    blockSubType,
+                    accountVersion,
+                    publicKey,
+                    previous,
+                    representative,
+                    NanoAmount.ofRaw(balance),
+                    link,
+                    height,
+                    signature,
+                    work
+                )
+            }
         }
 
 
@@ -119,23 +179,23 @@ class TransactionRepository(
         return transaction.await()
     }
 
-    suspend fun save(transaction: Transaction): Transaction {
-        this.client.sql(insertOrUpdateStatement)
-            .bind("hash", transaction.hash)
-            .bind("blockType", transaction.blockType)
-            .bind("blockSubType", Parameter.fromOrEmpty(transaction.blockSubtype, BlockSubType::class.java))
-            .bind("accountVersion", Parameter.fromOrEmpty(transaction.accountVersion, BigInteger::class.java))
-            .bind("publicKey", Parameter.fromOrEmpty(transaction.publicKey, ByteArray::class.java))
-            .bind("previous", Parameter.fromOrEmpty(transaction.previous, ByteArray::class.java))
-            .bind("representative", Parameter.fromOrEmpty(transaction.representative, ByteArray::class.java))
-            .bind("balance", Parameter.fromOrEmpty(transaction.balance?.toRaw(), BigDecimal::class.java))
-            .bind("link", Parameter.fromOrEmpty(transaction.link, ByteArray::class.java))
-            .bind("height", Parameter.fromOrEmpty(transaction.height, BigInteger::class.java))
-            .bind("signature", transaction.signature)
-            .bind("work", transaction.work)
+    suspend fun insert(transaction: Transaction): Boolean {
+        val inserts = this.client.sql(insertOrUpdateStatement)
+            .bind("hash", transaction.getHash())
+            .bind("blockType", transaction.getBlockType())
+            .bind("blockSubType", Parameter.fromOrEmpty(transaction.getBlockSubType(), BlockSubType::class.java))
+            .bind("accountVersion", Parameter.fromOrEmpty(transaction.getAccountVersion(), BigInteger::class.java))
+            .bind("publicKey", Parameter.fromOrEmpty(transaction.getPublicKey(), ByteArray::class.java))
+            .bind("previous", Parameter.fromOrEmpty(transaction.getPrevious(), ByteArray::class.java))
+            .bind("representative", Parameter.fromOrEmpty(transaction.getRepresentative(), ByteArray::class.java))
+            .bind("balance", Parameter.fromOrEmpty(transaction.getBalance()?.toRaw(), BigDecimal::class.java))
+            .bind("link", Parameter.fromOrEmpty(transaction.getLink(), ByteArray::class.java))
+            .bind("height", Parameter.fromOrEmpty(transaction.getHeight(), BigInteger::class.java))
+            .bind("signature", transaction.getSignature())
+            .bind("work", transaction.getWork())
             .fetch()
             .awaitRowsUpdated()
 
-        return transaction
+        return inserts == 1
     }
 }

@@ -6,7 +6,7 @@ import mu.KotlinLogging
 import org.springframework.stereotype.Component
 
 @Component
-class TCPByteArrayCodecs(private val codecs: List<TCPCodec<*>>) : ByteArrayCodecSupport {
+class TCPByteArrayCodecs(private val codecs: List<TCPCodec<*>>) : ByteArrayCodecSupport<Any> {
     private val logger = KotlinLogging.logger {}
 
     override fun encode(protocolVersion: Int, o: Any): ByteArray? {

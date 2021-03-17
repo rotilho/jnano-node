@@ -14,7 +14,8 @@ CREATE TABLE transactions
     height         INT UNSIGNED,
     signature      VARBINARY(64) NOT NULL,
     work           VARBINARY(8)  NOT NULL,
-    createdAt      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    createdAt      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updatedAt      TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
 CREATE TABLE pending_credit
